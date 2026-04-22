@@ -151,18 +151,5 @@ Licence
 
 Ce projet est sous licence MIT. Voir le fichier LICENSE pour plus de détails.
 
-Auteur
 
-[Votre Nom]
-
-Remerciements
-
-•
-À mon professeur pour le sujet de projet stimulant.
-
-•
-À la communauté Spring Boot pour l'écosystème riche et la documentation complète.
-
-•
-À Groq pour leur API d'inférence rapide et accessible.
 

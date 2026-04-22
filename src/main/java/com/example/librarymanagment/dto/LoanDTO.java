@@ -13,3 +13,5 @@ public class LoanDTO {
     private LocalDate dateRetourPrevue;
     private LocalDate dateRetourEffective;
     private Double penalite;
+
+}

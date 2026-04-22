@@ -142,62 +142,6 @@ Swagger UI : Une fois l'application démarrée, accédez à la documentation int
 •
 Console H2 : Pour visualiser la base de données en mémoire, accédez à http://localhost:8080/h2-console. Utilisez jdbc:h2:mem:bibliotheque_db comme URL JDBC, sa comme utilisateur et un mot de passe vide.
 
-Structure du Projet
-
-Bash
-
-
-src
-├── main
-│   ├── java
-│   │   └── com
-│   │       └── example
-│   │           └── bibliotheque
-│   │               ├── BibliothequeApplication.java
-│   │               ├── config
-│   │               │   └── OpenApiConfig.java
-│   │               ├── controller
-│   │               │   ├── AuthorController.java
-│   │               │   ├── BookController.java
-│   │               │   ├── ChatbotController.java
-│   │               │   ├── LoanController.java
-│   │               │   └── MemberController.java
-│   │               ├── dto
-│   │               │   ├── AuthorDTO.java
-│   │               │   ├── BookDTO.java
-│   │               │   ├── ChatbotRequest.java
-│   │               │   ├── ChatbotResponse.java
-│   │               │   ├── LoanDTO.java
-│   │               │   ├── LoanReturnDTO.java
-│   │               │   └── MemberDTO.java
-│   │               ├── entity
-│   │               │   ├── Author.java
-│   │               │   ├── Book.java
-│   │               │   ├── Loan.java
-│   │               │   └── Member.java
-│   │               ├── repository
-│   │               │   ├── AuthorRepository.java
-│   │               │   ├── BookRepository.java
-│   │               │   ├── LoanRepository.java
-│   │               │   └── MemberRepository.java
-│   │               └── service
-│   │                   ├── AuthorService.java
-│   │                   ├── BookService.java
-│   │                   ├── GroqService.java
-│   │                   ├── LoanService.java
-│   │                   └── MemberService.java
-│   └── resources
-│       ├── application.properties
-│       └── static (pour un éventuel frontend statique  )
-└── test
-    └── java
-        └── com
-            └── example
-                └── bibliotheque
-                    └── service
-                        └── BookServiceTest.java
-
-
 
 Contribution
 

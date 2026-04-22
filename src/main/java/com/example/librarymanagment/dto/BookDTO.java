@@ -13,5 +13,5 @@ public class BookDTO {
     private String genre;
     private Integer nombreExemplaires;
     private Integer disponibles;
-    private List<Long> authorIds;   // IDs des auteurs pour la création
+    private List<Long> authorIds;
 }

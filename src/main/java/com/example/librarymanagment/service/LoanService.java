@@ -1,9 +1,9 @@
 package com.example.librarymanagment.service;
 
 
-import com.library.dto.LoanDTO;
-import com.library.entity.*;
-import com.library.repository.*;
+import com.example.librarymanagment.dto.LoanDTO;
+import com.example.librarymanagment.entity.*;
+import com.example.librarymanagment.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

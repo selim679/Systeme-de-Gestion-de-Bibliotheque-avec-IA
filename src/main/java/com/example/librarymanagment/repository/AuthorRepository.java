@@ -6,5 +6,10 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 
-public class AuthorRepository {
+@Repository
+public interface AuthorRepository extends JpaRepository<Author, Long> {
+
+    @Query("SELECT a FROM Author a LEFT JOIN a.books b LEFT JOIN b.loans l " +
+            "GROUP BY a ORDER BY COUNT(l) DESC")
+    List<Author> findMostPopular();
 }

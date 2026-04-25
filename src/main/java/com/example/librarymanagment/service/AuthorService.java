@@ -2,9 +2,9 @@ package com.example.librarymanagment.service;
 
 
 
-import com.example.bibliotheque.dto.AuthorDTO;
-import com.example.bibliotheque.entity.Author;
-import com.example.bibliotheque.repository.AuthorRepository;
+import com.example.librarymanagment.dto.AuthorDTO;
+import com.example.librarymanagment.entity.Author;
+import com.example.librarymanagment.repository.AuthorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

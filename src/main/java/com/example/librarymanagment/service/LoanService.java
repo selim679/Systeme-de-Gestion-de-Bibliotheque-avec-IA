@@ -1,6 +1,5 @@
 package com.example.librarymanagment.service;
 
-
 import com.example.librarymanagment.dto.LoanDTO;
 import com.example.librarymanagment.entity.*;
 import com.example.librarymanagment.repository.*;
@@ -64,3 +63,19 @@ public class LoanService {
                     loan.getDateRetourPrevue(), LocalDate.now());
             loan.setPenalite(joursRetard * PENALITE_PAR_JOUR);
         }
+        // Incrémenter les exemplaires disponibles
+        Book book = loan.getBook();
+        book.setDisponibles(book.getDisponibles() + 1);
+        bookRepository.save(book);
+
+        return loanRepository.save(loan);
+    }
+
+    public List<Loan> getCurrentLoans() {
+        return loanRepository.findCurrentLoans();
+    }
+
+    public List<Loan> getOverdueLoans() {
+        return loanRepository.findOverdueLoans();
+    }
+}

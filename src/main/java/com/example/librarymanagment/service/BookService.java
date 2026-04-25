@@ -1,11 +1,11 @@
 package com.example.librarymanagment.service;
 
 
-import com.library.dto.BookDTO;
-import com.library.entity.Author;
-import com.library.entity.Book;
-import com.library.repository.AuthorRepository;
-import com.library.repository.BookRepository;
+import com.example.librarymanagment.dto.BookDTO;
+import com.example.librarymanagment.entity.Author;
+import com.example.librarymanagment.entity.Book;
+import com.example.librarymanagment.repository.AuthorRepository;
+import com.example.librarymanagment.repository.BookRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.List;

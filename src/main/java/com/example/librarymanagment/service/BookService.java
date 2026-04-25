@@ -50,3 +50,19 @@ public class BookService {
 
     public List<Book> getTopBorrowed() {
         return bookRepository.findTopBorrowed();
+    }
+
+    private void mapDtoToEntity(BookDTO dto, Book book) {
+        book.setTitre(dto.getTitre());
+        book.setIsbn(dto.getIsbn());
+        book.setDatePublication(dto.getDatePublication());
+        book.setGenre(dto.getGenre());
+        book.setNombreExemplaires(dto.getNombreExemplaires());
+        book.setDisponibles(dto.getDisponibles());
+
+        if (dto.getAuthorIds() != null) {
+            List<Author> authors = authorRepository.findAllById(dto.getAuthorIds());
+            book.setAuthors(authors);
+        }
+    }
+}

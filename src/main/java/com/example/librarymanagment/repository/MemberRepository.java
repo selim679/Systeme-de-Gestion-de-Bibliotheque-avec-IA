@@ -2,7 +2,7 @@ package com.example.librarymanagment.repository;
 
 
 
-import com.example.bibliotheque.entity.Member;
+import com.example.librarymanagment.entity.Member;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

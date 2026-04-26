@@ -28,12 +28,11 @@ public class Book {
 
     @ManyToMany
     @JoinTable(
-            name =
-                    book_authors",
+            name = "book_authors",
             joinColumns = @JoinColumn(name = "book_id"),
-            inverseJoinColumns = @JoinColumn(name = "author_id"))
+            inverseJoinColumns = @JoinColumn(name = "author_id")
+    )
     private Set<Author> authors = new HashSet<>();
-
     @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Loan> loans = new HashSet<>();
-}}
+}

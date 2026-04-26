@@ -1,41 +1,39 @@
 package com.example.librarymanagment.entity;
+package com.example.bibliotheque.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDate;
-import java.util.List;
-import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Data
-@Table(name = "books")
+@NoArgsConstructor
+@AllArgsConstructor
 public class Book {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(nullable = false)
     private String titre;
-
-    @Column(unique = true, nullable = false)
+    @Column(unique = true)
     private String isbn;
-
     private LocalDate datePublication;
     private String genre;
     private Integer nombreExemplaires;
     private Integer disponibles;
 
-    // Relation ManyToMany avec Author
-    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @ManyToMany
     @JoinTable(
-            name = "book_authors",
+            name =
+                    book_authors",
             joinColumns = @JoinColumn(name = "book_id"),
-            inverseJoinColumns = @JoinColumn(name = "author_id")
-    )
-    private List<Author> authors = new ArrayList<>();
+            inverseJoinColumns = @JoinColumn(name = "author_id"))
+    private Set<Author> authors = new HashSet<>();
 
-    // Relation OneToMany avec Loan
-    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL)
-    private List<Loan> loans = new ArrayList<>();
-}
+    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Loan> loans = new HashSet<>();
+}}

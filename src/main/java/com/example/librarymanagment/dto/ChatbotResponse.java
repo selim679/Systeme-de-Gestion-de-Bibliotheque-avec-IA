@@ -1,2 +1,12 @@
-package com.example.librarymanagment.dto;public class ChatbotResponse {
+package com.example.librarymanagment.dto;
+
+
+
+import lombok.Data;
+import java.util.List;
+
+@Data
+public class ChatbotResponse {
+    private String message;
+    private List<BookDTO> recommendedBooks;
 }

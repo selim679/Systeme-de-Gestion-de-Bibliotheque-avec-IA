@@ -1,4 +1,5 @@
-package com.example.bibliotheque.dto;
+package com.example.librarymanagment.dto;
+
 
 import lombok.Data;
 

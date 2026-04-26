@@ -1,5 +1,5 @@
 package com.example.librarymanagment.entity;
-package com.example.bibliotheque.entity;
+
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

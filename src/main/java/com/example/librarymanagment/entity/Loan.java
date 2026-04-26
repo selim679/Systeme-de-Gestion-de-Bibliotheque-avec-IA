@@ -1,34 +1,31 @@
 package com.example.librarymanagment.entity;
 
+
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDate;
 
 @Entity
 @Data
-@Table(name = "loans")
+@NoArgsConstructor
+@AllArgsConstructor
 public class Loan {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(nullable = false)
     private LocalDate dateEmprunt;
-
-    @Column(nullable = false)
     private LocalDate dateRetourPrevue;
-
-    // Null si pas encore rendu
     private LocalDate dateRetourEffective;
-    // Null si pas de pénalité
     private Double penalite;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "book_id", nullable = false)
+    @JoinColumn(name = "book_id")
     private Book book;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id", nullable = false)
+    @JoinColumn(name = "member_id")
     private Member member;
 }

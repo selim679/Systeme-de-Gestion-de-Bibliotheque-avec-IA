@@ -35,3 +35,28 @@
   0%, 100% { opacity: 1; }
   50% { opacity: .5; }
 }
+
+/* Styles for CRUD Modal */
+#crud-modal {
+  transition: opacity 0.3s ease-in-out;
+}
+
+#crud-modal.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#crud-modal > div {
+  transform: translateY(-20px);
+  transition: transform 0.3s ease-in-out;
+}
+
+#crud-modal:not(.hidden) > div {
+  transform: translateY(0);
+}
+
+/* Styles for active navigation tab */
+.nav-tab.text-blue-600 {
+  border-bottom: 2px solid theme("colors.blue.600");
+  padding-bottom: 0.25rem;
+}

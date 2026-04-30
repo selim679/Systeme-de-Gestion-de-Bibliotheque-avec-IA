@@ -1,14 +1,97 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bibliothèque</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ma Bibliothèque IA</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css">
 </head>
-<body>
-<h1>Bienvenue à la Bibliothèque</h1>
-<div id="books-list"></div>
+<body class="bg-gray-100 font-sans antialiased">
+
+<div class="min-h-screen flex flex-col">
+  <!-- Barre de Navigation -->
+  <nav class="bg-white shadow-md p-4">
+    <div class="container mx-auto flex justify-between items-center">
+      <a href="#" class="text-2xl font-bold text-blue-600 hover:text-blue-800 transition duration-300">
+        Ma Bibliothèque IA
+      </a>
+      <div class="space-x-4">
+        <a href="#books-section" class="text-gray-700 hover:text-blue-600 font-medium transition duration-300">Livres</a>
+        <a href="#chatbot-section" class="text-gray-700 hover:text-blue-600 font-medium transition duration-300">Chatbot IA</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Contenu Principal -->
+  <main class="container mx-auto mt-8 p-4 flex-grow">
+    <!-- Section d'accueil / Dashboard -->
+    <section id="home-section" class="bg-white p-8 rounded-lg shadow-lg text-center mb-8">
+      <h2 class="text-4xl font-extrabold text-gray-900 mb-4">Bienvenue dans votre Bibliothèque Intelligente !</h2>
+      <p class="text-lg text-gray-600 mb-8">
+        Gérez vos livres et explorez notre chatbot IA pour des recommandations personnalisées.
+      </p>
+      <div class="flex justify-center space-x-6">
+        <button id="view-books-btn" class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-300">
+          Voir les Livres
+        </button>
+        <button id="open-chatbot-btn" class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition duration-300">
+          Parler au Chatbot IA
+        </button>
+      </div>
+    </section>
+
+    <!-- Section des Livres -->
+    <section id="books-section" class="bg-white p-6 rounded-lg shadow-lg hidden">
+      <h2 class="text-3xl font-bold text-gray-800 mb-6">Liste des Livres</h2>
+      <div class="overflow-x-auto">
+        <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+          <thead>
+          <tr class="bg-gray-100 text-left text-gray-600 uppercase text-sm leading-normal">
+            <th class="py-3 px-6">Titre</th>
+            <th class="py-3 px-6">ISBN</th>
+            <th class="py-3 px-6">Genre</th>
+            <th class="py-3 px-6">Disponibles</th>
+          </tr>
+          </thead>
+          <tbody id="books-table-body" class="text-gray-700 text-sm font-light">
+          <!-- Les livres seront insérés ici par JavaScript -->
+          <tr>
+            <td colspan="4" class="py-3 px-6 text-center text-gray-500">Chargement des livres...</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Chatbot Flottant -->
+  <div id="chatbot-container" class="fixed bottom-4 right-4 w-96 bg-white rounded-lg shadow-xl border border-gray-200 hidden">
+    <div class="p-4 border-b border-gray-200 flex justify-between items-center bg-blue-600 text-white rounded-t-lg">
+      <h3 class="text-lg font-semibold">Chatbot IA</h3>
+      <button id="close-chatbot-btn" class="text-white hover:text-gray-200 text-xl font-bold">&times;</button>
+    </div>
+    <div id="chat-window" class="h-80 overflow-y-auto p-4 space-y-4">
+      <!-- Messages du chatbot et de l'utilisateur -->
+      <div class="flex justify-start">
+        <div class="bg-gray-200 text-gray-800 p-3 rounded-lg max-w-[75%]">
+          Bonjour ! Je suis votre assistant de bibliothèque. Que puis-je faire pour vous ?
+        </div>
+      </div>
+    </div>
+    <div class="p-4 border-t border-gray-200">
+      <form id="chatbot-form" class="flex">
+        <input type="text" id="user-message-input" placeholder="Demandez-moi un livre..." class="flex-grow form-input rounded-l-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 p-2">
+        <button type="submit" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-r-lg shadow-md hover:bg-green-700 transition duration-300">
+          Envoyer
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
 <script src="script.js"></script>
 </body>
 </html>

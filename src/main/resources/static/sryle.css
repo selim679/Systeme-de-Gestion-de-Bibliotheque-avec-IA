@@ -1,0 +1,37 @@
+/* Custom styles for form elements to ensure consistent appearance */
+.form-input {
+  @apply border-gray-300 rounded-md shadow-sm;
+}
+
+.form-input:focus {
+  @apply border-blue-300 ring ring-blue-200 ring-opacity-50;
+}
+
+/* Custom styles for chat window scrollbar */
+#chat-window::-webkit-scrollbar {
+  width: 8px;
+}
+
+#chat-window::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+#chat-window::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+#chat-window::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Animation for chatbot thinking */
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .5; }
+}

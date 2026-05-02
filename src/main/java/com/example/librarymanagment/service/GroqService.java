@@ -17,7 +17,9 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -46,77 +48,93 @@ public class GroqService {
       headers.setContentType(MediaType.APPLICATION_JSON);
       headers.setBearerAuth(groqApiKey);
 
-      // Construire le corps de la requête pour Groq
+      // Build the request body for Groq
       List<GroqMessage> messages = new ArrayList<>();
-      messages.add(new GroqMessage("system", "You are a helpful assistant for a library. Recommend books based on user queries. If a genre is mentioned, try to find books in that genre. If specific titles are mentioned, acknowledge them. Always try to suggest actual books from the library if possible. If you recommend books, list them clearly. If you don't find specific books, suggest general ideas."));
-      messages.add(new GroqMessage("user", request.getQuery() + "\n\nBased on this, can you suggest some book titles or genres? Please list any specific book titles you recommend at the end, separated by commas, e.g., 'Book Title 1, Book Title 2'."));
+      messages.add(new GroqMessage("system",
+        "You are a helpful assistant for a library. Recommend books based on user queries. "
+          + "If a genre is mentioned, try to find books in that genre. "
+          + "If specific titles are mentioned, acknowledge them. "
+          + "Always try to suggest actual books. "
+          + "If you recommend books, list them clearly. "
+          + "If you don't find specific books, suggest general ideas."));
+      messages.add(new GroqMessage("user",
+        request.getQuery()
+          + "\n\nBased on this, can you suggest some book titles or genres? "
+          + "Please list any specific book titles you recommend at the end, "
+          + "separated by commas, e.g., 'Book Title 1, Book Title 2'."));
 
-      // Utilisation d'une Map pour construire le JSON de manière flexible
-      java.util.Map<String, Object> groqRequest = new java.util.HashMap<>();
+      Map<String, Object> groqRequest = new HashMap<>();
       groqRequest.put("model", groqApiModel);
       groqRequest.put("messages", messages);
       groqRequest.put("temperature", 0.7);
       groqRequest.put("max_tokens", 200);
 
-      HttpEntity<java.util.Map<String, Object>> entity = new HttpEntity<>(groqRequest, headers);
+      HttpEntity<Map<String, Object>> entity = new HttpEntity<>(groqRequest, headers);
 
       GroqResponse groqResponse = restTemplate.postForObject(groqApiUrl, entity, GroqResponse.class);
 
-      if (groqResponse != null && groqResponse.getChoices() != null && !groqResponse.getChoices().isEmpty()) {
+      if (groqResponse != null
+        && groqResponse.getChoices() != null
+        && !groqResponse.getChoices().isEmpty()) {
+
         String chatbotMessage = groqResponse.getChoices().get(0).getMessage().getContent();
         List<Book> recommendedBooks = new ArrayList<>();
 
-        // Tenter d'extraire les titres de livres du message du chatbot
-        // Pattern pour trouver des titres entre guillemets ou après ':', ou séparés par des virgules
-        Pattern titlePattern = Pattern.compile("['\"]([^'\"]+)['\"]|: ([^,]+(?:, [^,]+)*)|([^,]+(?:, [^,]+)*)");
-        Matcher matcher = titlePattern.matcher(chatbotMessage);
-        List<String> extractedTitles = new ArrayList<>();
+        // ── 1. Try to match books by genre mentioned in the user query ──────────
+        Pattern genrePattern = Pattern.compile(
+          "(?:genre|catégorie|category)\\s+(\\w+)", Pattern.CASE_INSENSITIVE);
+        Matcher genreMatcher = genrePattern.matcher(request.getQuery());
+        if (genreMatcher.find()) {
+          String genre = genreMatcher.group(1);
+          List<Book> byGenre = bookRepository.findByGenreContainingIgnoreCase(genre);
+          recommendedBooks.addAll(byGenre);
+        }
 
-        while (matcher.find()) {
-          if (matcher.group(1) != null) { // Titres entre guillemets
-            extractedTitles.add(matcher.group(1).trim());
-          } else if (matcher.group(2) != null) { // Titres après ':'
-            for (String title : matcher.group(2).split(",")) {
-              extractedTitles.add(title.trim());
-            }
-          } else if (matcher.group(3) != null) { // Titres séparés par des virgules
-            for (String title : matcher.group(3).split(",")) {
-              extractedTitles.add(title.trim());
+        // ── 2. Extract titles mentioned in the chatbot reply ──────────────────
+        // Titles between single or double quotes
+        Pattern quotedTitlePattern = Pattern.compile("[\"']([^\"']+)[\"']");
+        Matcher quotedMatcher = quotedTitlePattern.matcher(chatbotMessage);
+        while (quotedMatcher.find()) {
+          String title = quotedMatcher.group(1).trim();
+          // findByTitreContainingIgnoreCase returns List<Book>, NOT Optional
+          List<Book> found = bookRepository.findByTitreContainingIgnoreCase(title);
+          recommendedBooks.addAll(found);
+        }
+
+        // Also try to grab comma-separated titles from the last line of the response
+        // (as instructed in the prompt: "Book Title 1, Book Title 2")
+        String[] lines = chatbotMessage.split("\\n");
+        String lastLine = lines[lines.length - 1].trim();
+        if (lastLine.contains(",")) {
+          for (String part : lastLine.split(",")) {
+            String title = part.trim()
+              .replaceAll("^['\"]|['\"]$", ""); // strip surrounding quotes
+            if (!title.isEmpty()) {
+              List<Book> found = bookRepository.findByTitreContainingIgnoreCase(title);
+              recommendedBooks.addAll(found);
             }
           }
         }
 
-        // Si le chatbot mentionne un genre, essayons de le trouver
-        Pattern genrePattern = Pattern.compile("genre (\\w+)", Pattern.CASE_INSENSITIVE);
-        Matcher genreMatcher = genrePattern.matcher(request.getQuery());
-        String genreFromQuery = null;
-        if (genreMatcher.find()) {
-          genreFromQuery = genreMatcher.group(1);
-        }
+        // ── 3. De-duplicate ──────────────────────────────────────────────────
+        List<Book> distinct = recommendedBooks.stream()
+          .distinct()
+          .collect(Collectors.toList());
 
-        if (genreFromQuery != null) {
-          List<Book> booksByGenre = bookRepository.findByGenreContainingIgnoreCase(genreFromQuery);
-          recommendedBooks.addAll(booksByGenre);
-        }
-
-        // Rechercher les livres extraits dans la base de données
-        for (String title : extractedTitles) {
-          recommendedBooks.addAll(
-            bookRepository.findByTitreContainingIgnoreCase(title)
-          );
-        }
-
-        // Éliminer les doublons si un livre est trouvé par genre et par titre
-        List<Book> distinctRecommendedBooks = recommendedBooks.stream().distinct().collect(Collectors.toList());
-
-        return new ChatbotResponse(chatbotMessage, distinctRecommendedBooks);
+        return new ChatbotResponse(chatbotMessage, distinct);
       }
-      return new ChatbotResponse("Désolé, je n'ai pas pu obtenir de réponse du chatbot.", Collections.emptyList());
+
+      return new ChatbotResponse(
+        "Désolé, je n'ai pas pu obtenir de réponse du chatbot.",
+        Collections.emptyList());
 
     } catch (Exception e) {
-      System.err.println("Erreur lors de la communication avec Groq ou du traitement de la réponse: " + e.getMessage());
+      System.err.println("Erreur Groq : " + e.getMessage());
       e.printStackTrace();
-      return new ChatbotResponse("Désolé, une erreur interne est survenue lors de la communication avec l'IA. Veuillez réessayer plus tard.", Collections.emptyList());
+      return new ChatbotResponse(
+        "Désolé, une erreur interne est survenue lors de la communication avec l'IA. "
+          + "Veuillez réessayer plus tard.",
+        Collections.emptyList());
     }
   }
 }

@@ -6,4 +6,8 @@ import lombok.Data;
 public class GroqMessage {
   private String role;
   private String content;
+
+  public GroqMessage(String system, String s) {
+
+  }
 }

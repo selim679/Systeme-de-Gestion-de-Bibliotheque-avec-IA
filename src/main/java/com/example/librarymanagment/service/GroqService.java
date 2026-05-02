@@ -5,7 +5,7 @@ import com.example.librarymanagment.dto.ChatbotRequest;
 import com.example.librarymanagment.dto.ChatbotResponse;
 import com.example.librarymanagment.dto.GroqMessage;
 import com.example.librarymanagment.dto.GroqResponse;
-import com.example.librarymanagment.model.Book;
+import com.example.librarymanagment.entity.Book;
 import com.example.librarymanagment.repository.BookRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,9 +16,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -53,13 +51,13 @@ public class GroqService {
       messages.add(new GroqMessage("user", request.getQuery() + "\n\nBased on this, can you suggest some book titles or genres? Please list any specific book titles you recommend at the end, separated by commas, e.g., 'Book Title 1, Book Title 2'."));
 
       // Utilisation d'une Map pour construire le JSON de manière flexible
-      java.util.Map<String, Object> groqRequest = new java.util.HashMap<>();
+      Map<String, Object> groqRequest = new HashMap<>();
       groqRequest.put("model", groqApiModel);
       groqRequest.put("messages", messages);
       groqRequest.put("temperature", 0.7);
       groqRequest.put("max_tokens", 200);
 
-      HttpEntity<java.util.Map<String, Object>> entity = new HttpEntity<>(groqRequest, headers);
+      HttpEntity<Map<String, Object>> entity = new HttpEntity<>(groqRequest, headers);
 
       GroqResponse groqResponse = restTemplate.postForObject(groqApiUrl, entity, GroqResponse.class);
 
@@ -102,9 +100,10 @@ public class GroqService {
 
         // Rechercher les livres extraits dans la base de données
         for (String title : extractedTitles) {
-          bookRepository.findByTitreContainingIgnoreCase(title).ifPresent(recommendedBooks::add);
+          recommendedBooks.addAll(
+            bookRepository.findByTitreContainingIgnoreCase(title)
+          );
         }
-
         // Éliminer les doublons si un livre est trouvé par genre et par titre
         List<Book> distinctRecommendedBooks = recommendedBooks.stream().distinct().collect(Collectors.toList());
 

@@ -1,21 +1,24 @@
 package com.example.librarymanagment.service;
 
-import com.example.librarymanagment.dto.BookDTO;
+
 import com.example.librarymanagment.dto.ChatbotRequest;
 import com.example.librarymanagment.dto.ChatbotResponse;
-import com.example.librarymanagment.entity.Book;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.example.librarymanagment.dto.GroqMessage;
+import com.example.librarymanagment.dto.GroqResponse;
+import com.example.librarymanagment.model.Book;
+import com.example.librarymanagment.repository.BookRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.client.RestTemplate;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -23,146 +26,96 @@ import java.util.stream.Collectors;
 @Service
 public class GroqService {
 
-    private final WebClient webClient;
-    private final BookService bookService;
-    private final ObjectMapper objectMapper;
+  @Value("${groq.api.key}")
+  private String groqApiKey;
 
-    @Value("${groq.model}")
-    private String groqModel;
+  @Value("${groq.api.url}")
+  private String groqApiUrl;
 
-    @Autowired
-    public GroqService(WebClient.Builder webClientBuilder,
-                       @Value("${groq.api.url}") String groqApiUrl,
-                       @Value("${groq.api.key}") String groqApiKey,
-                       BookService bookService,
-                       ObjectMapper objectMapper) {
+  @Value("${groq.api.model}")
+  private String groqApiModel;
 
-        this.webClient = webClientBuilder.baseUrl(groqApiUrl)
-                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + groqApiKey)
-                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .build();
+  @Autowired
+  private BookRepository bookRepository;
 
-        this.bookService = bookService;
-        this.objectMapper = objectMapper;
-    }
+  private final RestTemplate restTemplate = new RestTemplate();
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public ChatbotResponse getBookRecommendations(ChatbotRequest request) {
-        String userQuery = request.getQuery();
+  public ChatbotResponse getBookRecommendations(ChatbotRequest request) {
+    try {
+      HttpHeaders headers = new HttpHeaders();
+      headers.setContentType(MediaType.APPLICATION_JSON);
+      headers.setBearerAuth(groqApiKey);
 
-        // 1. Call Groq API
-        String groqResponseContent = callGroqApi(userQuery);
+      // Construire le corps de la requête pour Groq
+      List<GroqMessage> messages = new ArrayList<>();
+      messages.add(new GroqMessage("system", "You are a helpful assistant for a library. Recommend books based on user queries. If a genre is mentioned, try to find books in that genre. If specific titles are mentioned, acknowledge them. Always try to suggest actual books from the library if possible. If you recommend books, list them clearly. If you don't find specific books, suggest general ideas."));
+      messages.add(new GroqMessage("user", request.getQuery() + "\n\nBased on this, can you suggest some book titles or genres? Please list any specific book titles you recommend at the end, separated by commas, e.g., 'Book Title 1, Book Title 2'."));
 
-        // 2. Parse response
-        Map<String, String> searchCriteria = parseGroqResponse(groqResponseContent);
+      // Utilisation d'une Map pour construire le JSON de manière flexible
+      java.util.Map<String, Object> groqRequest = new java.util.HashMap<>();
+      groqRequest.put("model", groqApiModel);
+      groqRequest.put("messages", messages);
+      groqRequest.put("temperature", 0.7);
+      groqRequest.put("max_tokens", 200);
 
-        // 3. Search books
-        List<Book> foundBooks = bookService.searchBooks(
-                searchCriteria.get("titre"),
-                searchCriteria.get("genre"),
-                searchCriteria.get("isbn"),
-                searchCriteria.containsKey("disponibles")
-                        ? Boolean.parseBoolean(searchCriteria.get("disponibles"))
-                        : null
-        );
+      HttpEntity<java.util.Map<String, Object>> entity = new HttpEntity<>(groqRequest, headers);
 
-        // 4. Build response
-        ChatbotResponse response = new ChatbotResponse();
+      GroqResponse groqResponse = restTemplate.postForObject(groqApiUrl, entity, GroqResponse.class);
 
-        if (!foundBooks.isEmpty()) {
-            response.setMessage("Voici quelques suggestions de livres basées sur votre demande :");
-            response.setRecommendedBooks(
-                    foundBooks.stream()
-                            .map(this::convertToBookDTO)
-                            .collect(Collectors.toList())
-            );
-        } else {
-            response.setMessage("Désolé, je n'ai pas trouvé de livres correspondant à votre demande.");
-            response.setRecommendedBooks(new ArrayList<>());
-        }
+      if (groqResponse != null && groqResponse.getChoices() != null && !groqResponse.getChoices().isEmpty()) {
+        String chatbotMessage = groqResponse.getChoices().get(0).getMessage().getContent();
+        List<Book> recommendedBooks = new ArrayList<>();
 
-        return response;
-    }
+        // Tenter d'extraire les titres de livres du message du chatbot
+        // Pattern pour trouver des titres entre guillemets ou après ':', ou séparés par des virgules
+        Pattern titlePattern = Pattern.compile("['\"]([^'\"]+)['\"]|: ([^,]+(?:, [^,]+)*)|([^,]+(?:, [^,]+)*)");
+        Matcher matcher = titlePattern.matcher(chatbotMessage);
+        List<String> extractedTitles = new ArrayList<>();
 
-    private String callGroqApi(String userQuery) {
-
-        String systemPrompt = "Tu es un assistant de bibliothèque. " +
-                "Extrais les informations clés (titre, genre, auteur, ISBN, disponibilité). " +
-                "Réponds uniquement en JSON sans texte. Exemple: " +
-                "{\"genre\": \"science-fiction\", \"auteur\": \"Frank Herbert\"}";
-
-        List<Map<String, Object>> messages = new ArrayList<>();
-        messages.add(Map.of("role", "system", "content", systemPrompt));
-        messages.add(Map.of("role", "user", "content", userQuery));
-
-        Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("model", groqModel);
-        requestBody.put("messages", messages);
-        requestBody.put("temperature", 0.7);
-        requestBody.put("max_tokens", 150);
-
-        return webClient.post()
-                .bodyValue(requestBody)
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();
-    }
-
-    private Map<String, String> parseGroqResponse(String groqResponseContent) {
-        Map<String, String> criteria = new HashMap<>();
-
-        try {
-            JsonNode rootNode = objectMapper.readTree(groqResponseContent);
-            JsonNode choicesNode = rootNode.path("choices");
-
-            if (choicesNode.isArray() && choicesNode.size() > 0) {
-                String content = choicesNode.get(0)
-                        .path("message")
-                        .path("content")
-                        .asText();
-
-                try {
-                    // Try real JSON parsing
-                    JsonNode jsonContent = objectMapper.readTree(content);
-                    jsonContent.fields().forEachRemaining(entry ->
-                            criteria.put(entry.getKey(), entry.getValue().asText())
-                    );
-
-                } catch (Exception e) {
-                    // FIXED REGEX HERE ✅
-                    Pattern pattern = Pattern.compile("\"(.*?)\":\"(.*?)\"");
-                    Matcher matcher = pattern.matcher(content);
-
-                    while (matcher.find()) {
-                        criteria.put(matcher.group(1), matcher.group(2));
-                    }
-                }
+        while (matcher.find()) {
+          if (matcher.group(1) != null) { // Titres entre guillemets
+            extractedTitles.add(matcher.group(1).trim());
+          } else if (matcher.group(2) != null) { // Titres après ':'
+            for (String title : matcher.group(2).split(",")) {
+              extractedTitles.add(title.trim());
             }
-
-        } catch (Exception e) {
-            System.err.println("Erreur parsing Groq: " + e.getMessage());
+          } else if (matcher.group(3) != null) { // Titres séparés par des virgules
+            for (String title : matcher.group(3).split(",")) {
+              extractedTitles.add(title.trim());
+            }
+          }
         }
 
-        return criteria;
+        // Si le chatbot mentionne un genre, essayons de le trouver
+        Pattern genrePattern = Pattern.compile("genre (\\w+)", Pattern.CASE_INSENSITIVE);
+        Matcher genreMatcher = genrePattern.matcher(request.getQuery());
+        String genreFromQuery = null;
+        if (genreMatcher.find()) {
+          genreFromQuery = genreMatcher.group(1);
+        }
+
+        if (genreFromQuery != null) {
+          List<Book> booksByGenre = bookRepository.findByGenreContainingIgnoreCase(genreFromQuery);
+          recommendedBooks.addAll(booksByGenre);
+        }
+
+        // Rechercher les livres extraits dans la base de données
+        for (String title : extractedTitles) {
+          bookRepository.findByTitreContainingIgnoreCase(title).ifPresent(recommendedBooks::add);
+        }
+
+        // Éliminer les doublons si un livre est trouvé par genre et par titre
+        List<Book> distinctRecommendedBooks = recommendedBooks.stream().distinct().collect(Collectors.toList());
+
+        return new ChatbotResponse(chatbotMessage, distinctRecommendedBooks);
+      }
+      return new ChatbotResponse("Désolé, je n'ai pas pu obtenir de réponse du chatbot.", Collections.emptyList());
+
+    } catch (Exception e) {
+      System.err.println("Erreur lors de la communication avec Groq ou du traitement de la réponse: " + e.getMessage());
+      e.printStackTrace();
+      return new ChatbotResponse("Désolé, une erreur interne est survenue lors de la communication avec l'IA. Veuillez réessayer plus tard.", Collections.emptyList());
     }
-
-    private BookDTO convertToBookDTO(Book book) {
-        BookDTO dto = new BookDTO();
-
-        dto.setId(book.getId());
-        dto.setTitre(book.getTitre());
-        dto.setIsbn(book.getIsbn());
-        dto.setDatePublication(book.getDatePublication());
-        dto.setGenre(book.getGenre());
-        dto.setNombreExemplaires(book.getNombreExemplaires());
-        dto.setDisponibles(book.getDisponibles());
-
-        dto.setAuthorIds(
-                book.getAuthors()
-                        .stream()
-                        .map(author -> author.getId())
-                        .collect(Collectors.toList())
-        );
-
-        return dto;
-    }
+  }
 }
